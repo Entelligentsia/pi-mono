@@ -1,0 +1,104 @@
+name: Upstream drift report
+
+# Reports drift between this fork (Entelligentsia/pi-mono) and the upstream
+# parent repo (earendil-works/pi). Runs weekly on a fixed schedule and on
+# manual dispatch. Posts results to a single rolling issue tagged
+# `upstream-drift` so we never accumulate one-off issues over time.
+#
+# Sync strategy is human-gated: this workflow ONLY reports drift, it never
+# auto-merges. See doc/plans/forge-cli-stage3-scope.md §2.4 (forge-engineering
+# repo) for the cadence policy.
+
+on:
+  schedule:
+    # Mondays at 14:00 UTC
+    - cron: '0 14 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream https://github.com/earendil-works/pi.git
+          git fetch upstream main --tags --no-recurse-submodules
+
+      - name: Compute drift summary
+        id: summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          AHEAD=$(git rev-list --count HEAD..upstream/main || echo 0)
+          BEHIND=$(git rev-list --count upstream/main..HEAD || echo 0)
+          UPSTREAM_HEAD=$(git rev-parse --short upstream/main)
+          FORK_HEAD=$(git rev-parse --short HEAD)
+          {
+            echo "## Upstream drift report — $(date -u +%Y-%m-%dT%H:%MZ)"
+            echo
+            echo "- **Fork HEAD:** \`$FORK_HEAD\`"
+            echo "- **Upstream HEAD:** \`$UPSTREAM_HEAD\` (earendil-works/pi)"
+            echo "- **Behind upstream:** $AHEAD commits"
+            echo "- **Ahead of upstream:** $BEHIND commits"
+            echo
+            if [ "$AHEAD" -gt 0 ]; then
+              echo "### Upstream commits not in fork"
+              echo
+              echo '```'
+              git log --oneline HEAD..upstream/main | head -100
+              echo '```'
+              echo
+              echo "### Per-package diff stat (fork vs upstream/main)"
+              echo
+              echo '```'
+              git diff --stat HEAD upstream/main -- packages/ | head -60 || true
+              echo '```'
+            else
+              echo "_Fork is up to date with upstream/main._"
+            fi
+            if [ "$BEHIND" -gt 0 ]; then
+              echo
+              echo "### Fork commits not in upstream"
+              echo
+              echo '```'
+              git log --oneline upstream/main..HEAD | head -50
+              echo '```'
+            fi
+          } > drift-report.md
+          {
+            echo "ahead=$AHEAD"
+            echo "behind=$BEHIND"
+            echo "fork_head=$FORK_HEAD"
+            echo "upstream_head=$UPSTREAM_HEAD"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find or create rolling issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AHEAD: ${{ steps.summary.outputs.ahead }}
+          BEHIND: ${{ steps.summary.outputs.behind }}
+        run: |
+          set -euo pipefail
+          # Find the open rolling issue, if any
+          ISSUE_NUMBER=$(gh issue list --label upstream-drift --state open --json number --jq '.[0].number // empty')
+          BODY=$(cat drift-report.md)
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Creating new rolling issue."
+            gh label create upstream-drift --color "ededed" --description "Tracks upstream-drift reports from the weekly workflow" --force
+            gh issue create \
+              --title "Upstream drift — earendil-works/pi" \
+              --label upstream-drift \
+              --body "$BODY"
+          else
+            echo "Updating existing rolling issue #$ISSUE_NUMBER."
+            gh issue edit "$ISSUE_NUMBER" --body "$BODY"
+            gh issue comment "$ISSUE_NUMBER" --body "Drift report refreshed at $(date -u +%Y-%m-%dT%H:%MZ). Behind upstream by ${AHEAD} commits, ahead by ${BEHIND}."
+          fi
