@@ -40,10 +40,10 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Api, Model } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { DynamicBorder, getAgentDir } from "@earendil-works/pi-coding-agent";
-import { Container, Key, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
+import type { Api, Model } from "@entelligentsia/pi-ai";
+import type { ExtensionAPI, ExtensionContext } from "@entelligentsia/pi-coding-agent";
+import { DynamicBorder, getAgentDir } from "@entelligentsia/pi-coding-agent";
+import { Container, Key, type SelectItem, SelectList, Text } from "@entelligentsia/pi-tui";
 
 // Preset configuration
 interface Preset {

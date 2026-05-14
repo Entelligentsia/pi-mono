@@ -20,9 +20,9 @@
 
 This is the home of the pi agent harness project including our self extensible coding agent.
 
-* **[@earendil-works/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
-* **[@earendil-works/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
-* **[@earendil-works/pi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
+* **[@entelligentsia/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
+* **[@entelligentsia/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
+* **[@entelligentsia/pi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
 
 To learn more about pi:
 
@@ -49,11 +49,11 @@ I regularly publish my own `pi-mono` work sessions here:
 
 | Package | Description |
 |---------|-------------|
-| **[@earendil-works/pi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
-| **[@earendil-works/pi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
-| **[@earendil-works/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
-| **[@earendil-works/pi-tui](packages/tui)** | Terminal UI library with differential rendering |
-| **[@earendil-works/pi-web-ui](packages/web-ui)** | Web components for AI chat interfaces |
+| **[@entelligentsia/pi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
+| **[@entelligentsia/pi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
+| **[@entelligentsia/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
+| **[@entelligentsia/pi-tui](packages/tui)** | Terminal UI library with differential rendering |
+| **[@entelligentsia/pi-web-ui](packages/web-ui)** | Web components for AI chat interfaces |
 
 For Slack/chat automation and workflows see [earendil-works/pi-chat](https://github.com/earendil-works/pi-chat).
 
