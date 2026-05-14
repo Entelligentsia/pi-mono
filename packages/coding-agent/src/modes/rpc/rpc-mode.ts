@@ -200,6 +200,10 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			// Component factories are not supported in RPC mode - would need TUI access
 		},
 
+		setOutputSource(_component: unknown): void {
+			// Chat-viewport source-swap not supported in RPC mode - requires TUI access
+		},
+
 		setFooter(_factory: unknown): void {
 			// Custom footer not supported in RPC mode - requires TUI access
 		},
