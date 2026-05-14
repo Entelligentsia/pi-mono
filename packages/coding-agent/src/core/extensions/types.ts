@@ -167,6 +167,21 @@ export interface ExtensionUIContext {
 		options?: ExtensionWidgetOptions,
 	): void;
 
+	/**
+	 * Swap the source rendered in the main chat viewport.
+	 *
+	 * The chat viewport defaults to rendering its message-history children
+	 * (assistant turns, tool calls, notifications). Pass a Component to take
+	 * over that viewport — useful when an extension owns a stream the user
+	 * wants to read in-place (e.g. a subagent's tail buffer). Pass null to
+	 * restore default rendering.
+	 *
+	 * The original children are preserved across overrides — restoring is
+	 * cheap and lossless. Only interactive mode honours this; non-interactive
+	 * (RPC) mode is a no-op.
+	 */
+	setOutputSource(component: Component | null): void;
+
 	/** Set a custom footer component, or undefined to restore the built-in footer.
 	 *
 	 * The factory receives a FooterDataProvider for data not otherwise accessible:
