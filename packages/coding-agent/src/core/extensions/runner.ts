@@ -203,6 +203,7 @@ const noOpUIContext: ExtensionUIContext = {
 	setFooter: () => {},
 	setHeader: () => {},
 	setTitle: () => {},
+	setOutputSource: () => {},
 	custom: async () => undefined as never,
 	pasteToEditor: () => {},
 	setEditorText: () => {},

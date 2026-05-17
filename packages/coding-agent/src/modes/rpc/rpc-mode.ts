@@ -218,6 +218,11 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			} as RpcExtensionUIRequest);
 		},
 
+		setOutputSource(_component: unknown): void {
+			// Chat viewport source-swap is not supported in RPC mode — it requires
+			// TUI access to mutate the active container.
+		},
+
 		async custom() {
 			// Custom UI not supported in RPC mode
 			return undefined as never;

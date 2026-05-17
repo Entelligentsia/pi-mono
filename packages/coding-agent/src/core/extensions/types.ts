@@ -185,6 +185,21 @@ export interface ExtensionUIContext {
 	/** Set the terminal window/tab title. */
 	setTitle(title: string): void;
 
+	/**
+	 * Swap the source rendered in the main chat viewport.
+	 *
+	 * The chat viewport defaults to rendering its message-history children
+	 * (assistant turns, tool calls, notifications). Pass a Component to take
+	 * over that viewport — useful when an extension owns a stream the user
+	 * wants to read in-place (e.g. a subagent's tail buffer). Pass null to
+	 * restore default rendering.
+	 *
+	 * The original children are preserved across overrides — restoring is
+	 * cheap and lossless. Only interactive mode honours this; non-interactive
+	 * (RPC) mode is a no-op.
+	 */
+	setOutputSource(component: Component | null): void;
+
 	/** Show a custom component with keyboard focus. */
 	custom<T>(
 		factory: (

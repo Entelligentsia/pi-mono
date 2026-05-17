@@ -162,6 +162,34 @@ class ExpandableText extends Text implements Expandable {
 	}
 }
 
+/**
+ * Container that can have its rendered output overridden by a single Component.
+ *
+ * Used for the chat output viewport. By default it renders its children (the
+ * normal message history). When `sourceOverride` is set, it delegates rendering
+ * to that component instead, while preserving the original children so the
+ * override can be cleared without rebuilding history.
+ *
+ * Drives the extension-side `ctx.ui.setOutputSource(component)` API — extensions
+ * that mount a swap-target (e.g. a thread-switcher viewing a subagent tail) can
+ * take over the main chat viewport on user command and restore it on dismiss.
+ */
+class SourceOverridableContainer extends Container {
+	sourceOverride: Component | null = null;
+
+	override render(width: number): string[] {
+		if (this.sourceOverride) {
+			return this.sourceOverride.render(width);
+		}
+		return super.render(width);
+	}
+
+	override invalidate(): void {
+		this.sourceOverride?.invalidate?.();
+		super.invalidate();
+	}
+}
+
 type CompactionQueuedMessage = {
 	text: string;
 	mode: "steer" | "followUp";
@@ -231,7 +259,7 @@ export interface InteractiveModeOptions {
 export class InteractiveMode {
 	private runtimeHost: AgentSessionRuntime;
 	private ui: TUI;
-	private chatContainer: Container;
+	private chatContainer: SourceOverridableContainer;
 	private pendingMessagesContainer: Container;
 	private statusContainer: Container;
 	private defaultEditor: CustomEditor;
@@ -363,7 +391,7 @@ export class InteractiveMode {
 		this.ui = new TUI(new ProcessTerminal(), this.settingsManager.getShowHardwareCursor());
 		this.ui.setClearOnShrink(this.settingsManager.getClearOnShrink());
 		this.headerContainer = new Container();
-		this.chatContainer = new Container();
+		this.chatContainer = new SourceOverridableContainer();
 		this.pendingMessagesContainer = new Container();
 		this.statusContainer = new Container();
 		this.widgetContainerAbove = new Container();
@@ -1885,6 +1913,24 @@ export class InteractiveMode {
 	}
 
 	/**
+	 * Implements ctx.ui.setOutputSource — swap the chat viewport's rendering source.
+	 *
+	 * Passing a Component delegates the chat viewport's render() to it; the
+	 * original message-history children are preserved. Passing null restores
+	 * the default child-rendering behaviour.
+	 *
+	 * Extensions that own a tail buffer (e.g. forge-cli's thread-switcher
+	 * targeting a subagent log) supply a Component that yields lines from
+	 * that buffer; the user sees that content in the main viewport until the
+	 * extension calls setOutputSource(null).
+	 */
+	private setChatOutputSource(component: Component | null): void {
+		this.chatContainer.sourceOverride = component;
+		this.chatContainer.invalidate();
+		this.ui.requestRender();
+	}
+
+	/**
 	 * Set a custom header component, or restore the built-in header.
 	 */
 	private setExtensionHeader(factory: ((tui: TUI, thm: Theme) => Component & { dispose?(): void }) | undefined): void {
@@ -1970,6 +2016,7 @@ export class InteractiveMode {
 			setFooter: (factory) => this.setExtensionFooter(factory),
 			setHeader: (factory) => this.setExtensionHeader(factory),
 			setTitle: (title) => this.ui.terminal.setTitle(title),
+			setOutputSource: (component) => this.setChatOutputSource(component),
 			custom: (factory, options) => this.showExtensionCustom(factory, options),
 			pasteToEditor: (text) => this.editor.handleInput(`\x1b[200~${text}\x1b[201~`),
 			setEditorText: (text) => this.editor.setText(text),
