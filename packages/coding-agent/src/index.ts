@@ -1,7 +1,7 @@
 // Core session management
 
 // Config paths
-export { getAgentDir, VERSION } from "./config.js";
+export { getAgentDir, getDocsPath, VERSION } from "./config.js";
 export {
 	AgentSession,
 	type AgentSessionConfig,
@@ -13,6 +13,13 @@ export {
 	parseSkillBlock,
 	type SessionStats,
 } from "./core/agent-session.js";
+// Onboarding guidance strings (stable, reusable by embedders that wrap pi)
+export {
+	formatNoApiKeyFoundMessage,
+	formatNoModelSelectedMessage,
+	formatNoModelsAvailableMessage,
+	getProviderLoginHelp,
+} from "./core/auth-guidance.js";
 // Auth and model registry
 export {
 	type ApiKeyCredential,
@@ -281,6 +288,13 @@ export {
 } from "./core/tools/index.js";
 // Main entry point
 export { type MainOptions, main } from "./main.js";
+// Startup migrations (embedders must run these to match `pi` env→auth.json semantics)
+export {
+	migrateAuthToAuthJson,
+	migrateSessionsFromAgentRoot,
+	runMigrations,
+	showDeprecationWarnings,
+} from "./migrations.js";
 // Run modes for programmatic SDK usage
 export {
 	InteractiveMode,
