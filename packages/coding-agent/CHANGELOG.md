@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.75.1-forge.2] - 2026-05-18
+
+### Fixed
+
+- Fixed `getNewEntries` to strip pre-release suffixes (e.g. `-forge.1`) before parsing `lastVersion`, preventing the changelog banner from re-showing every session when the pi version has a pre-release suffix.
+
+### Added
+
+- Added `PI_SKIP_CHANGELOG` environment variable to suppress the startup changelog banner. Useful for launchers (e.g., forge-cli) that own a more comprehensive changelog/whats-new surface.
+
 ## [0.75.1-forge.1] - 2026-05-18
 
 ### Added

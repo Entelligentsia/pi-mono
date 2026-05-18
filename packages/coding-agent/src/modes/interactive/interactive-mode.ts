@@ -885,6 +885,11 @@ export class InteractiveMode {
 			return undefined;
 		}
 
+		// Allow launchers that own their own changelog surface to suppress this banner.
+		if (process.env.PI_SKIP_CHANGELOG) {
+			return undefined;
+		}
+
 		const lastVersion = this.settingsManager.getLastChangelogVersion();
 		const changelogPath = getChangelogPath();
 		const entries = parseChangelog(changelogPath);
