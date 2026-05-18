@@ -811,7 +811,7 @@ export class InteractiveMode {
 	}
 
 	private async checkForPackageUpdates(): Promise<string[]> {
-		if (process.env.PI_OFFLINE) {
+		if (process.env.PI_OFFLINE || process.env.PI_SKIP_PACKAGE_UPDATE_CHECK) {
 			return [];
 		}
 
@@ -882,6 +882,11 @@ export class InteractiveMode {
 	private getChangelogForDisplay(): string | undefined {
 		// Skip changelog for resumed/continued sessions (already have messages)
 		if (this.session.state.messages.length > 0) {
+			return undefined;
+		}
+
+		// Allow launchers that own their own changelog surface to suppress this banner.
+		if (process.env.PI_SKIP_CHANGELOG) {
 			return undefined;
 		}
 
@@ -2548,7 +2553,7 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
-			if (text === "/changelog") {
+			if (text === "/changelog" && !this.isExtensionCommand(text)) {
 				this.handleChangelogCommand();
 				this.editor.setText("");
 				return;

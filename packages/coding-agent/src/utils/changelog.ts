@@ -83,8 +83,8 @@ export function compareVersions(v1: ChangelogEntry, v2: ChangelogEntry): number 
  * Get entries newer than lastVersion
  */
 export function getNewEntries(entries: ChangelogEntry[], lastVersion: string): ChangelogEntry[] {
-	// Parse lastVersion
-	const parts = lastVersion.split(".").map(Number);
+	// Strip pre-release suffix (e.g. "0.75.1-forge.1" → "0.75.1") before parsing.
+	const parts = lastVersion.split("-")[0]!.split(".").map(Number);
 	const last: ChangelogEntry = {
 		major: parts[0] || 0,
 		minor: parts[1] || 0,

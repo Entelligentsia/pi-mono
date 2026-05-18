@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+## [0.75.1-forge.4] - 2026-05-18
+
+### Changed
+
+- Removed `changelog` from `BUILTIN_SLASH_COMMANDS`. Extensions that register a `changelog` command now appear in autocomplete without a conflict warning.
+
+## [0.75.1-forge.3] - 2026-05-18
+
+### Changed
+
+- Extension commands now shadow the built-in `/changelog` handler. When an extension registers a `changelog` command, it takes precedence over pi's built-in changelog display.
+
+## [0.75.1-forge.2] - 2026-05-18
+
+### Fixed
+
+- Fixed `getNewEntries` to strip pre-release suffixes (e.g. `-forge.1`) before parsing `lastVersion`, preventing the changelog banner from re-showing every session when the pi version has a pre-release suffix.
+
+### Added
+
+- Added `PI_SKIP_CHANGELOG` environment variable to suppress the startup changelog banner. Useful for launchers (e.g., forge-cli) that own a more comprehensive changelog/whats-new surface.
+
+## [0.75.1-forge.1] - 2026-05-18
+
+### Added
+
+- Added `PI_SKIP_PACKAGE_UPDATE_CHECK` environment variable to suppress the package-update banner independently of `PI_OFFLINE`. Useful for consumers (e.g., forge-cli) that vendor a pinned pi tarball and own their own update surface.
+
 ## [0.75.1] - 2026-05-18
 
 ### Fixed
