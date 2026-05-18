@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.75.1-forge.1] - 2026-05-18
+
+### Added
+
+- Added `PI_SKIP_PACKAGE_UPDATE_CHECK` environment variable to suppress the package-update banner independently of `PI_OFFLINE`. Useful for consumers (e.g., forge-cli) that vendor a pinned pi tarball and own their own update surface.
+
 ## [0.75.1] - 2026-05-18
 
 ### Fixed
