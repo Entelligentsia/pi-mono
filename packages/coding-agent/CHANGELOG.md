@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.75.1-forge.4] - 2026-05-18
+
+### Changed
+
+- Removed `changelog` from `BUILTIN_SLASH_COMMANDS`. Extensions that register a `changelog` command now appear in autocomplete without a conflict warning.
+
 ## [0.75.1-forge.3] - 2026-05-18
 
 ### Changed
