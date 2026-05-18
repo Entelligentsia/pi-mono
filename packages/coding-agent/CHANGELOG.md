@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.75.1-forge.3] - 2026-05-18
+
+### Changed
+
+- Extension commands now shadow the built-in `/changelog` handler. When an extension registers a `changelog` command, it takes precedence over pi's built-in changelog display.
+
 ## [0.75.1-forge.2] - 2026-05-18
 
 ### Fixed

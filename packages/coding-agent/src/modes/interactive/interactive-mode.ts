@@ -2553,7 +2553,7 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
-			if (text === "/changelog") {
+			if (text === "/changelog" && !this.isExtensionCommand(text)) {
 				this.handleChangelogCommand();
 				this.editor.setText("");
 				return;
