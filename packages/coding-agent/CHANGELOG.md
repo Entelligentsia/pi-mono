@@ -2,33 +2,28 @@
 
 ## [Unreleased]
 
-## [0.75.1-forge.4] - 2026-05-18
+### Fixed
 
-### Changed
+- Fixed the subagent extension's parallel mode to return useful per-task output and failed-task diagnostics to the parent model instead of 100-character previews ([#4710](https://github.com/earendil-works/pi/issues/4710)).
+- Fixed Windows local bash execution to hide helper console windows when launched from background SDK processes ([#4699](https://github.com/earendil-works/pi/issues/4699)).
 
-- Removed `changelog` from `BUILTIN_SLASH_COMMANDS`. Extensions that register a `changelog` command now appear in autocomplete without a conflict warning.
-
-## [0.75.1-forge.3] - 2026-05-18
-
-### Changed
-
-- Extension commands now shadow the built-in `/changelog` handler. When an extension registers a `changelog` command, it takes precedence over pi's built-in changelog display.
-
-## [0.75.1-forge.2] - 2026-05-18
+## [0.75.3] - 2026-05-18
 
 ### Fixed
 
-- Fixed `getNewEntries` to strip pre-release suffixes (e.g. `-forge.1`) before parsing `lastVersion`, preventing the changelog banner from re-showing every session when the pi version has a pre-release suffix.
+- Fixed undici 8 HTTP/2 destroyed-session races crashing the Node CLI by preserving the previous HTTP/1.1-only fetch dispatcher behavior ([#4681](https://github.com/earendil-works/pi/issues/4681)).
 
-### Added
+## [0.75.2] - 2026-05-18
 
-- Added `PI_SKIP_CHANGELOG` environment variable to suppress the startup changelog banner. Useful for launchers (e.g., forge-cli) that own a more comprehensive changelog/whats-new surface.
+### Fixed
 
-## [0.75.1-forge.1] - 2026-05-18
-
-### Added
-
-- Added `PI_SKIP_PACKAGE_UPDATE_CHECK` environment variable to suppress the package-update banner independently of `PI_OFFLINE`. Useful for consumers (e.g., forge-cli) that vendor a pinned pi tarball and own their own update surface.
+- Fixed Bun-compiled release binaries failing to start when Bun's built-in undici shim lacks npm undici's `install` export ([#4661](https://github.com/earendil-works/pi-mono/pull/4661) by [@dmasiero](https://github.com/dmasiero)).
+- Fixed Xiaomi MiMo generated model metadata to replay assistant tool-call messages with `reasoning_content` for thinking-mode multi-turn requests, inherited from `@earendil-works/pi-ai` ([#4678](https://github.com/earendil-works/pi/issues/4678)).
+- Fixed Windows external editor handoff so vim/nvim can receive input after opening from the TUI ([#4612](https://github.com/earendil-works/pi/issues/4612)).
+- Fixed Windows npm self-updates to move loaded native dependency packages out of the active install before reinstalling pi ([#4157](https://github.com/earendil-works/pi/issues/4157)).
+- Fixed `pi update --self` detection for pnpm v11 global installs whose package path resolves through the pnpm store ([#4647](https://github.com/earendil-works/pi/issues/4647)).
+- Fixed Windows pnpm self-updates to resolve pnpm command shims and run through pnpm instead of requiring manual updates ([#4157](https://github.com/earendil-works/pi/issues/4157)).
+- Fixed Windows npm-family command execution to use cross-spawn instead of parsing `.cmd` shim internals ([#4665](https://github.com/earendil-works/pi/issues/4665)).
 
 ## [0.75.1] - 2026-05-18
 
