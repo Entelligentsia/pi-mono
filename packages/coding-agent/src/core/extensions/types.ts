@@ -310,10 +310,14 @@ export interface CompactOptions {
 /**
  * Context passed to extension event handlers.
  */
+export type ExtensionMode = "tui" | "rpc" | "json" | "print";
+
 export interface ExtensionContext {
 	/** UI methods for user interaction */
 	ui: ExtensionUIContext;
-	/** Whether UI is available (false in print/RPC mode) */
+	/** Current run mode. Use "tui" to guard terminal-only UI such as custom components. */
+	mode: ExtensionMode;
+	/** Whether dialog-capable UI is available (true in TUI and RPC modes) */
 	hasUI: boolean;
 	/** Current working directory */
 	cwd: string;
@@ -346,6 +350,9 @@ export interface ExtensionContext {
  * Includes session control methods only safe in user-initiated commands.
  */
 export interface ExtensionCommandContext extends ExtensionContext {
+	/** Get the current base system-prompt construction options. */
+	getSystemPromptOptions(): BuildSystemPromptOptions;
+
 	/** Wait for the agent to finish streaming */
 	waitForIdle(): Promise<void>;
 
@@ -1517,6 +1524,7 @@ export interface ExtensionContextActions {
 	getContextUsage: () => ContextUsage | undefined;
 	compact: (options?: CompactOptions) => void;
 	getSystemPrompt: () => string;
+	getSystemPromptOptions?: () => BuildSystemPromptOptions;
 }
 
 /**
