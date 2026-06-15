@@ -18,4 +18,12 @@ export const BASE_URLS = {
 	openRouter: "https://openrouter.ai/api/v1",
 	aiGateway: "https://ai-gateway.vercel.sh",
 	aiGatewayModels: "https://ai-gateway.vercel.sh/v1",
+	groq: "https://api.groq.com/openai/v1",
+	cerebras: "https://api.cerebras.ai/v1",
+	bedrockUsEast: "https://bedrock-runtime.us-east-1.amazonaws.com",
+	bedrockEuCentral: "https://bedrock-runtime.eu-central-1.amazonaws.com",
 } as const;
+
+/** Default limits applied when models.dev omits them. */
+export const DEFAULT_CONTEXT_WINDOW = 4096;
+export const DEFAULT_MAX_TOKENS = 4096;

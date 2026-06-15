@@ -11,7 +11,9 @@ import {
 } from "../src/providers/cloudflare.ts";
 import type { AnthropicMessagesCompat, Api, KnownProvider, Model, OpenAICompletionsCompat } from "../src/types.ts";
 import { BASE_URLS } from "./generate-models/constants.ts";
+import { CATALOG_DESCRIPTORS, getBedrockBaseUrl } from "./generate-models/descriptors.ts";
 import { onFetchFailure } from "./generate-models/io.ts";
+import { type ModelsDevModel, pushCatalogModels } from "./generate-models/normalize.ts";
 import { validateRegistry } from "./generate-models/validate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,30 +31,6 @@ export interface GenerateModelsOptions {
 	fetchFn?: FetchFn;
 	/** When false, the generated source is returned but not written to disk. Default: true. */
 	write?: boolean;
-}
-
-interface ModelsDevModel {
-	id: string;
-	name: string;
-	tool_call?: boolean;
-	reasoning?: boolean;
-	limit?: {
-		context?: number;
-		output?: number;
-	};
-	cost?: {
-		input?: number;
-		output?: number;
-		cache_read?: number;
-		cache_write?: number;
-	};
-	modalities?: {
-		input?: string[];
-		output?: string[];
-	};
-	provider?: {
-		npm?: string;
-	};
 }
 
 interface NvidiaNimModelListItem {
@@ -387,12 +365,6 @@ function getAnthropicMessagesCompat(provider: string, modelId: string): Anthropi
 	return Object.keys(compat).length > 0 ? compat : undefined;
 }
 
-function getBedrockBaseUrl(modelId: string): string {
-	return modelId.startsWith("eu.")
-		? "https://bedrock-runtime.eu-central-1.amazonaws.com"
-		: "https://bedrock-runtime.us-east-1.amazonaws.com";
-}
-
 function normalizeNvidiaModelId(modelId: string): string {
 	return modelId.toLowerCase().replaceAll("_", ".");
 }
@@ -546,173 +518,10 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 		const models: Model<any>[] = [];
 		const nvidiaNimModelIds = data.nvidia?.models ? await fetchNvidiaNimModelIds(fetchFn) : new Map<string, string>();
 
-		// Process Amazon Bedrock models
-		if (data["amazon-bedrock"]?.models) {
-			for (const [modelId, model] of Object.entries(data["amazon-bedrock"].models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				let id = modelId;
-
-				if (id.startsWith("ai21.jamba")) {
-					// These models doesn't support tool use in streaming mode
-					continue;
-				}
-
-				if (id.startsWith("mistral.mistral-7b-instruct-v0")) {
-					// These models doesn't support system messages
-					continue;
-				}
-
-				models.push({
-					id,
-					name: m.name || id,
-					api: "bedrock-converse-stream" as const,
-					provider: "amazon-bedrock" as const,
-					baseUrl: getBedrockBaseUrl(id),
-					reasoning: m.reasoning === true,
-					input: (m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"]) as ("text" | "image")[],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
-
-		// Process Anthropic models
-		if (data.anthropic?.models) {
-			for (const [modelId, model] of Object.entries(data.anthropic.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "anthropic-messages",
-					provider: "anthropic",
-					baseUrl: BASE_URLS.anthropic,
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
-
-		// Process Google models
-		if (data.google?.models) {
-			for (const [modelId, model] of Object.entries(data.google.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "google-generative-ai",
-					provider: "google",
-					baseUrl: BASE_URLS.googleGenAI,
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
-
-		// Process OpenAI models
-		if (data.openai?.models) {
-			for (const [modelId, model] of Object.entries(data.openai.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "openai-responses",
-					provider: "openai",
-					baseUrl: BASE_URLS.openaiResponses,
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
-
-		// Process Groq models
-		if (data.groq?.models) {
-			for (const [modelId, model] of Object.entries(data.groq.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "openai-completions",
-					provider: "groq",
-					baseUrl: "https://api.groq.com/openai/v1",
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
-
-		// Process Cerebras models
-		if (data.cerebras?.models) {
-			for (const [modelId, model] of Object.entries(data.cerebras.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "openai-completions",
-					provider: "cerebras",
-					baseUrl: "https://api.cerebras.ai/v1",
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
+		// Process every provider whose models.dev entries follow the common shape
+		// (Bedrock, Anthropic, Google, OpenAI, Groq, Cerebras, xAI, Mistral).
+		// See scripts/generate-models/descriptors.ts to add one.
+		pushCatalogModels(models, data, CATALOG_DESCRIPTORS);
 
 		// Process Cloudflare Workers AI models
 		if (data["cloudflare-workers-ai"]?.models) {
@@ -796,32 +605,6 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 			}
 		}
 
-		// Process xAi models
-		if (data.xai?.models) {
-			for (const [modelId, model] of Object.entries(data.xai.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "openai-completions",
-					provider: "xai",
-					baseUrl: BASE_URLS.xai,
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
-			}
-		}
-
 		// Process zAi models
 		const zaiCodingPlanVariants = [
 			{ provider: "zai", baseUrl: "https://api.z.ai/api/coding/paas/v4" },
@@ -858,32 +641,6 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 						maxTokens: m.limit?.output || 4096,
 					});
 				}
-			}
-		}
-
-		// Process Mistral models
-		if (data.mistral?.models) {
-			for (const [modelId, model] of Object.entries(data.mistral.models)) {
-				const m = model as ModelsDevModel;
-				if (m.tool_call !== true) continue;
-
-				models.push({
-					id: modelId,
-					name: m.name || modelId,
-					api: "mistral-conversations",
-					provider: "mistral",
-					baseUrl: BASE_URLS.mistral,
-					reasoning: m.reasoning === true,
-					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
-					cost: {
-						input: m.cost?.input || 0,
-						output: m.cost?.output || 0,
-						cacheRead: m.cost?.cache_read || 0,
-						cacheWrite: m.cost?.cache_write || 0,
-					},
-					contextWindow: m.limit?.context || 4096,
-					maxTokens: m.limit?.output || 4096,
-				});
 			}
 		}
 
