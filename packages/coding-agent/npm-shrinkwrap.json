@@ -23,6 +23,7 @@
 				"jiti": "2.7.0",
 				"minimatch": "10.2.5",
 				"proper-lockfile": "4.1.2",
+				"semver": "7.8.0",
 				"typebox": "1.1.38",
 				"undici": "8.3.0",
 				"yaml": "2.9.0"
@@ -1260,6 +1261,16 @@
 					"url": "https://feross.org/support"
 				}
 			]
+		},
+		"node_modules/semver": {
+			"version": "7.8.0",
+			"license": "ISC",
+			"bin": {
+				"semver": "bin/semver.js"
+			},
+			"engines": {
+				"node": ">=10"
+			}
 		},
 		"node_modules/shebang-command": {
 			"version": "2.0.0",
