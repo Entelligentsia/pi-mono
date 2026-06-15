@@ -11,6 +11,7 @@ import {
 } from "../src/providers/cloudflare.ts";
 import type { AnthropicMessagesCompat, Api, KnownProvider, Model, OpenAICompletionsCompat } from "../src/types.ts";
 import { BASE_URLS } from "./generate-models/constants.ts";
+import { onFetchFailure } from "./generate-models/io.ts";
 import { validateRegistry } from "./generate-models/validate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -415,7 +416,7 @@ async function fetchNvidiaNimModelIds(fetchFn: FetchFn): Promise<Map<string, str
 		console.log(`Fetched ${data.data?.length ?? 0} model IDs from NVIDIA NIM`);
 		return modelIds;
 	} catch (error) {
-		console.error("Failed to fetch NVIDIA NIM models:", error);
+		onFetchFailure("NVIDIA NIM", error);
 		return new Map();
 	}
 }
@@ -473,7 +474,7 @@ async function fetchOpenRouterModels(fetchFn: FetchFn): Promise<Model<any>[]> {
 		console.log(`Fetched ${models.length} tool-capable models from OpenRouter`);
 		return models;
 	} catch (error) {
-		console.error("Failed to fetch OpenRouter models:", error);
+		onFetchFailure("OpenRouter", error);
 		return [];
 	}
 }
@@ -531,7 +532,7 @@ async function fetchAiGatewayModels(fetchFn: FetchFn): Promise<Model<any>[]> {
 		console.log(`Fetched ${models.length} tool-capable models from Vercel AI Gateway`);
 		return models;
 	} catch (error) {
-		console.error("Failed to fetch Vercel AI Gateway models:", error);
+		onFetchFailure("Vercel AI Gateway", error);
 		return [];
 	}
 }
@@ -1339,7 +1340,7 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 		console.log(`Loaded ${models.length} tool-capable models from models.dev`);
 		return models;
 	} catch (error) {
-		console.error("Failed to load models.dev data:", error);
+		onFetchFailure("models.dev", error);
 		return [];
 	}
 }
