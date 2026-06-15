@@ -10,6 +10,7 @@ import {
 	CLOUDFLARE_WORKERS_AI_BASE_URL,
 } from "../src/providers/cloudflare.ts";
 import type { AnthropicMessagesCompat, Api, KnownProvider, Model, OpenAICompletionsCompat } from "../src/types.ts";
+import { BASE_URLS } from "./generate-models/constants.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -81,7 +82,7 @@ const KIMI_STATIC_HEADERS = {
 	"User-Agent": "KimiCLI/1.5",
 } as const;
 
-const TOGETHER_BASE_URL = "https://api.together.ai/v1";
+const TOGETHER_BASE_URL = BASE_URLS.together;
 const TOGETHER_BASE_COMPAT: OpenAICompletionsCompat = {
 	supportsStore: false,
 	supportsDeveloperRole: false,
@@ -132,9 +133,9 @@ const TOGETHER_TOGGLE_REASONING_LEVEL_MAP = {
 	medium: null,
 } as const;
 
-const AI_GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1";
-const AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh";
-const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
+const AI_GATEWAY_MODELS_URL = BASE_URLS.aiGatewayModels;
+const AI_GATEWAY_BASE_URL = BASE_URLS.aiGateway;
+const NVIDIA_BASE_URL = BASE_URLS.nvidia;
 const NVIDIA_HEADERS = {
 	"NVCF-POLL-SECONDS": "3600",
 } as const;
@@ -452,7 +453,7 @@ async function fetchOpenRouterModels(fetchFn: FetchFn): Promise<Model<any>[]> {
 				id: modelKey,
 				name: model.name,
 				api: "openai-completions",
-				baseUrl: "https://openrouter.ai/api/v1",
+				baseUrl: BASE_URLS.openRouter,
 				provider,
 				reasoning: model.supported_parameters?.includes("reasoning") || false,
 				input,
@@ -592,7 +593,7 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 					name: m.name || modelId,
 					api: "anthropic-messages",
 					provider: "anthropic",
-					baseUrl: "https://api.anthropic.com",
+					baseUrl: BASE_URLS.anthropic,
 					reasoning: m.reasoning === true,
 					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
 					cost: {
@@ -618,7 +619,7 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 					name: m.name || modelId,
 					api: "google-generative-ai",
 					provider: "google",
-					baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+					baseUrl: BASE_URLS.googleGenAI,
 					reasoning: m.reasoning === true,
 					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
 					cost: {
@@ -644,7 +645,7 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 					name: m.name || modelId,
 					api: "openai-responses",
 					provider: "openai",
-					baseUrl: "https://api.openai.com/v1",
+					baseUrl: BASE_URLS.openaiResponses,
 					reasoning: m.reasoning === true,
 					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
 					cost: {
@@ -804,7 +805,7 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 					name: m.name || modelId,
 					api: "openai-completions",
 					provider: "xai",
-					baseUrl: "https://api.x.ai/v1",
+					baseUrl: BASE_URLS.xai,
 					reasoning: m.reasoning === true,
 					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
 					cost: {
@@ -869,7 +870,7 @@ async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 					name: m.name || modelId,
 					api: "mistral-conversations",
 					provider: "mistral",
-					baseUrl: "https://api.mistral.ai",
+					baseUrl: BASE_URLS.mistral,
 					reasoning: m.reasoning === true,
 					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
 					cost: {
@@ -1456,7 +1457,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "claude-opus-4-6",
 			name: "Claude Opus 4.6",
 			api: "anthropic-messages",
-			baseUrl: "https://api.anthropic.com",
+			baseUrl: BASE_URLS.anthropic,
 			provider: "anthropic",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1477,7 +1478,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "claude-opus-4-7",
 			name: "Claude Opus 4.7",
 			api: "anthropic-messages",
-			baseUrl: "https://api.anthropic.com",
+			baseUrl: BASE_URLS.anthropic,
 			provider: "anthropic",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1498,7 +1499,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "claude-opus-4-8",
 			name: "Claude Opus 4.8",
 			api: "anthropic-messages",
-			baseUrl: "https://api.anthropic.com",
+			baseUrl: BASE_URLS.anthropic,
 			provider: "anthropic",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1519,7 +1520,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "claude-sonnet-4-6",
 			name: "Claude Sonnet 4.6",
 			api: "anthropic-messages",
-			baseUrl: "https://api.anthropic.com",
+			baseUrl: BASE_URLS.anthropic,
 			provider: "anthropic",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1540,7 +1541,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "gemini-3.1-flash-lite-preview",
 			name: "Gemini 3.1 Flash Lite Preview",
 			api: "google-generative-ai",
-			baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+			baseUrl: BASE_URLS.googleGenAI,
 			provider: "google",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1561,7 +1562,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "gpt-5-chat-latest",
 			name: "GPT-5 Chat Latest",
 			api: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			baseUrl: BASE_URLS.openaiResponses,
 			provider: "openai",
 			reasoning: false,
 			input: ["text", "image"],
@@ -1581,7 +1582,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "gpt-5.1-codex",
 			name: "GPT-5.1 Codex",
 			api: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			baseUrl: BASE_URLS.openaiResponses,
 			provider: "openai",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1601,7 +1602,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "gpt-5.1-codex-max",
 			name: "GPT-5.1 Codex Max",
 			api: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			baseUrl: BASE_URLS.openaiResponses,
 			provider: "openai",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1621,7 +1622,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "gpt-5.3-codex-spark",
 			name: "GPT-5.3 Codex Spark",
 			api: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			baseUrl: BASE_URLS.openaiResponses,
 			provider: "openai",
 			reasoning: true,
 			input: ["text"],
@@ -1655,7 +1656,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "gpt-5.4",
 			name: "GPT-5.4",
 			api: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			baseUrl: BASE_URLS.openaiResponses,
 			provider: "openai",
 			reasoning: true,
 			input: ["text", "image"],
@@ -1679,7 +1680,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "deepseek-v4-flash",
 			name: "DeepSeek V4 Flash",
 			api: "openai-completions",
-			baseUrl: "https://api.deepseek.com",
+			baseUrl: BASE_URLS.deepseek,
 			provider: "deepseek",
 			reasoning: true,
 			input: ["text"],
@@ -1697,7 +1698,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "deepseek-v4-pro",
 			name: "DeepSeek V4 Pro",
 			api: "openai-completions",
-			baseUrl: "https://api.deepseek.com",
+			baseUrl: BASE_URLS.deepseek,
 			provider: "deepseek",
 			reasoning: true,
 			input: ["text"],
@@ -1726,7 +1727,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "Ling-2.6-flash",
 			name: "Ling 2.6 Flash",
 			api: "openai-completions",
-			baseUrl: "https://api.ant-ling.com/v1",
+			baseUrl: BASE_URLS.antLing,
 			provider: "ant-ling",
 			reasoning: false,
 			input: ["text"],
@@ -1739,7 +1740,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "Ling-2.6-1T",
 			name: "Ling 2.6 1T",
 			api: "openai-completions",
-			baseUrl: "https://api.ant-ling.com/v1",
+			baseUrl: BASE_URLS.antLing,
 			provider: "ant-ling",
 			reasoning: false,
 			input: ["text"],
@@ -1752,7 +1753,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "Ring-2.6-1T",
 			name: "Ring 2.6 1T",
 			api: "openai-completions",
-			baseUrl: "https://api.ant-ling.com/v1",
+			baseUrl: BASE_URLS.antLing,
 			provider: "ant-ling",
 			reasoning: true,
 			input: ["text"],
@@ -1855,7 +1856,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "grok-3",
 			name: "Grok 3",
 			api: "openai-completions",
-			baseUrl: "https://api.x.ai/v1",
+			baseUrl: BASE_URLS.xai,
 			provider: "xai",
 			reasoning: false,
 			input: ["text"],
@@ -1867,7 +1868,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "grok-3-fast",
 			name: "Grok 3 Fast",
 			api: "openai-completions",
-			baseUrl: "https://api.x.ai/v1",
+			baseUrl: BASE_URLS.xai,
 			provider: "xai",
 			reasoning: false,
 			input: ["text"],
@@ -1879,7 +1880,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			id: "grok-code-fast-1",
 			name: "Grok Code Fast 1",
 			api: "openai-completions",
-			baseUrl: "https://api.x.ai/v1",
+			baseUrl: BASE_URLS.xai,
 			provider: "xai",
 			reasoning: false,
 			input: ["text"],
@@ -1906,7 +1907,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			name: "Mistral Medium 3.5",
 			api: "mistral-conversations",
 			provider: "mistral",
-			baseUrl: "https://api.mistral.ai",
+			baseUrl: BASE_URLS.mistral,
 			reasoning: true,
 			input: ["text", "image"],
 			cost: {
@@ -1927,7 +1928,7 @@ export async function generateModels(options: GenerateModelsOptions = {}): Promi
 			name: "Auto",
 			api: "openai-completions",
 			provider: "openrouter",
-			baseUrl: "https://openrouter.ai/api/v1",
+			baseUrl: BASE_URLS.openRouter,
 			reasoning: true,
 			input: ["text", "image"],
 			cost: {
