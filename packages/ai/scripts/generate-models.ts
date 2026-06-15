@@ -15,6 +15,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const packageRoot = join(__dirname, "..");
 
+/**
+ * Injectable fetch so the generator can run against frozen fixtures in tests.
+ * Defaults to the global `fetch` when invoked as the build script.
+ */
+export type FetchFn = (url: string) => Promise<{ json(): Promise<any> }>;
+
+export interface GenerateModelsOptions {
+	/** Network fetch implementation. Default: global `fetch`. */
+	fetchFn?: FetchFn;
+	/** When false, the generated source is returned but not written to disk. Default: true. */
+	write?: boolean;
+}
+
 interface ModelsDevModel {
 	id: string;
 	name: string;
@@ -385,10 +398,10 @@ function roundCost(value: number): number {
 	return Number(value.toFixed(6));
 }
 
-async function fetchNvidiaNimModelIds(): Promise<Map<string, string>> {
+async function fetchNvidiaNimModelIds(fetchFn: FetchFn): Promise<Map<string, string>> {
 	try {
 		console.log("Fetching models from NVIDIA NIM API...");
-		const response = await fetch(`${NVIDIA_BASE_URL}/models`);
+		const response = await fetchFn(`${NVIDIA_BASE_URL}/models`);
 		const data = (await response.json()) as { data?: NvidiaNimModelListItem[] };
 		const modelIds = new Map<string, string>();
 
@@ -405,10 +418,10 @@ async function fetchNvidiaNimModelIds(): Promise<Map<string, string>> {
 	}
 }
 
-async function fetchOpenRouterModels(): Promise<Model<any>[]> {
+async function fetchOpenRouterModels(fetchFn: FetchFn): Promise<Model<any>[]> {
 	try {
 		console.log("Fetching models from OpenRouter API...");
-		const response = await fetch("https://openrouter.ai/api/v1/models");
+		const response = await fetchFn("https://openrouter.ai/api/v1/models");
 		const data = await response.json();
 
 		const models: Model<any>[] = [];
@@ -463,10 +476,10 @@ async function fetchOpenRouterModels(): Promise<Model<any>[]> {
 	}
 }
 
-async function fetchAiGatewayModels(): Promise<Model<any>[]> {
+async function fetchAiGatewayModels(fetchFn: FetchFn): Promise<Model<any>[]> {
 	try {
 		console.log("Fetching models from Vercel AI Gateway API...");
-		const response = await fetch(`${AI_GATEWAY_MODELS_URL}/models`);
+		const response = await fetchFn(`${AI_GATEWAY_MODELS_URL}/models`);
 		const data = await response.json();
 		const models: Model<any>[] = [];
 
@@ -521,14 +534,14 @@ async function fetchAiGatewayModels(): Promise<Model<any>[]> {
 	}
 }
 
-async function loadModelsDevData(): Promise<Model<any>[]> {
+async function loadModelsDevData(fetchFn: FetchFn): Promise<Model<any>[]> {
 	try {
 		console.log("Fetching models from models.dev API...");
-		const response = await fetch("https://models.dev/api.json");
+		const response = await fetchFn("https://models.dev/api.json");
 		const data = await response.json();
 
 		const models: Model<any>[] = [];
-		const nvidiaNimModelIds = data.nvidia?.models ? await fetchNvidiaNimModelIds() : new Map<string, string>();
+		const nvidiaNimModelIds = data.nvidia?.models ? await fetchNvidiaNimModelIds(fetchFn) : new Map<string, string>();
 
 		// Process Amazon Bedrock models
 		if (data["amazon-bedrock"]?.models) {
@@ -1329,14 +1342,16 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 	}
 }
 
-async function generateModels() {
+export async function generateModels(options: GenerateModelsOptions = {}): Promise<string> {
+	const fetchFn = options.fetchFn ?? ((url: string) => fetch(url));
+	const write = options.write ?? true;
 	// Fetch models from both sources
 	// models.dev: Anthropic, Google, OpenAI, Groq, Cerebras
 	// OpenRouter: xAI and other providers (excluding Anthropic, Google, OpenAI)
 	// AI Gateway: OpenAI-compatible catalog with tool-capable models
-	const modelsDevModels = await loadModelsDevData();
-	const openRouterModels = await fetchOpenRouterModels();
-	const aiGatewayModels = await fetchAiGatewayModels();
+	const modelsDevModels = await loadModelsDevData(fetchFn);
+	const openRouterModels = await fetchOpenRouterModels(fetchFn);
+	const aiGatewayModels = await fetchAiGatewayModels(fetchFn);
 
 	// Combine models (models.dev has priority)
 	const allModels = [...modelsDevModels, ...openRouterModels, ...aiGatewayModels].filter(
@@ -2179,21 +2194,27 @@ export const MODELS = {
 `;
 
 	// Write file
-	writeFileSync(join(packageRoot, "src/models.generated.ts"), output);
-	console.log("Generated src/models.generated.ts");
+	if (write) {
+		writeFileSync(join(packageRoot, "src/models.generated.ts"), output);
+		console.log("Generated src/models.generated.ts");
 
-	// Print statistics
-	const totalModels = allModels.length;
-	const reasoningModels = allModels.filter(m => m.reasoning).length;
+		// Print statistics
+		const totalModels = allModels.length;
+		const reasoningModels = allModels.filter(m => m.reasoning).length;
 
-	console.log(`\nModel Statistics:`);
-	console.log(`  Total tool-capable models: ${totalModels}`);
-	console.log(`  Reasoning-capable models: ${reasoningModels}`);
+		console.log(`\nModel Statistics:`);
+		console.log(`  Total tool-capable models: ${totalModels}`);
+		console.log(`  Reasoning-capable models: ${reasoningModels}`);
 
-	for (const [provider, models] of Object.entries(providers)) {
-		console.log(`  ${provider}: ${Object.keys(models).length} models`);
+		for (const [provider, models] of Object.entries(providers)) {
+			console.log(`  ${provider}: ${Object.keys(models).length} models`);
+		}
 	}
+
+	return output;
 }
 
-// Run the generator
-generateModels().catch(console.error);
+// Run the generator only when invoked directly as the build script (not on import).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+	generateModels().catch(console.error);
+}
