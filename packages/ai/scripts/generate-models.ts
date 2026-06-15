@@ -14,6 +14,7 @@ import { BASE_URLS } from "./generate-models/constants.ts";
 import { CATALOG_DESCRIPTORS, getBedrockBaseUrl } from "./generate-models/descriptors.ts";
 import { onFetchFailure } from "./generate-models/io.ts";
 import { type ModelsDevModel, pushCatalogModels } from "./generate-models/normalize.ts";
+import { applyOverrides, type OverrideRule } from "./generate-models/overrides.ts";
 import { validateRegistry } from "./generate-models/validate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -261,97 +262,112 @@ function isGemma4Model(modelId: string): boolean {
 	return /gemma-?4/.test(modelId.toLowerCase());
 }
 
-function applyThinkingLevelMetadata(model: Model<any>): void {
-	if (
-		(model.api === "openai-responses" || model.api === "azure-openai-responses") &&
-		model.id.startsWith("gpt-5")
-	) {
-		mergeThinkingLevelMap(model, { off: null });
-	}
-	if (model.provider === "github-copilot" && model.id.startsWith("gpt-5")) {
-		mergeThinkingLevelMap(model, { minimal: "low" });
-	}
-	if (
-		model.api === "openai-responses" &&
-		model.provider === "openai" &&
-		OPENAI_RESPONSES_NONE_REASONING_MODELS.has(model.id)
-	) {
-		mergeThinkingLevelMap(model, { off: "none" });
-	}
-	if (supportsOpenAiXhigh(model.id)) {
-		mergeThinkingLevelMap(model, { xhigh: "xhigh" });
-	}
-	if (model.provider === "openai" && model.id === "gpt-5.5") {
-		mergeThinkingLevelMap(model, { minimal: null });
-	}
-	if (model.id.endsWith("gpt-5.5-pro")) {
-		mergeThinkingLevelMap(model, { off: null, minimal: null, low: null });
-	}
-	if (model.id.includes("opus-4-6") || model.id.includes("opus-4.6")) {
-		mergeThinkingLevelMap(model, { xhigh: "max" });
-	}
-	if (
-		model.id.includes("opus-4-7") ||
-		model.id.includes("opus-4.7") ||
-		model.id.includes("opus-4-8") ||
-		model.id.includes("opus-4.8")
-	) {
-		mergeThinkingLevelMap(model, { xhigh: "xhigh" });
-	}
-	if (
-		(model.api === "anthropic-messages" || model.api === "bedrock-converse-stream") &&
-		model.id.includes("fable-5")
-	) {
-		mergeThinkingLevelMap(model, { off: null, xhigh: "xhigh" });
-	}
-	if (model.api === "anthropic-messages" && isAnthropicAdaptiveThinkingModel(model.id)) {
-		mergeAnthropicMessagesCompat(model, { forceAdaptiveThinking: true });
-	}
-	if (model.api === "anthropic-messages" && isAnthropicTemperatureUnsupportedModel(model.id)) {
-		mergeAnthropicMessagesCompat(model, { supportsTemperature: false });
-	}
-	if (model.api === "openai-completions" && model.id.includes("deepseek-v4")) {
-		mergeThinkingLevelMap(
-			model,
-			model.provider === "openrouter"
-				? { ...DEEPSEEK_V4_THINKING_LEVEL_MAP, xhigh: "xhigh" }
-				: DEEPSEEK_V4_THINKING_LEVEL_MAP,
-		);
-	}
-	if (isGoogleThinkingApi(model) && isGemini3ProModel(model.id)) {
-		mergeThinkingLevelMap(model, { off: null, minimal: null, low: "LOW", medium: null, high: "HIGH" });
-	}
-	if (isGoogleThinkingApi(model) && isGemini3FlashModel(model.id)) {
-		mergeThinkingLevelMap(model, { off: null });
-	}
-	if (isGoogleThinkingApi(model) && isGemma4Model(model.id)) {
-		mergeThinkingLevelMap(model, { off: null, minimal: "MINIMAL", low: null, medium: null, high: "HIGH" });
-	}
-	if (model.provider === "groq" && model.id === "qwen/qwen3-32b") {
-		mergeThinkingLevelMap(model, { minimal: null, low: null, medium: null, high: "default" });
-	}
-	if (model.provider === "openai-codex" && supportsOpenAiXhigh(model.id)) {
-		mergeThinkingLevelMap(model, { minimal: "low" });
-	}
-	if (model.provider === "openrouter" && model.id.startsWith("inception/mercury-2")) {
+/**
+ * Per-model thinking-level and compat quirks, as data. Applied in array order
+ * (a later rule can refine an earlier one). Add a quirk by adding a row.
+ */
+const THINKING_LEVEL_RULES: OverrideRule[] = [
+	{
+		match: (m) => (m.api === "openai-responses" || m.api === "azure-openai-responses") && m.id.startsWith("gpt-5"),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null }),
+	},
+	{
+		match: (m) => m.provider === "github-copilot" && m.id.startsWith("gpt-5"),
+		patch: (m) => mergeThinkingLevelMap(m, { minimal: "low" }),
+	},
+	{
+		match: (m) => m.api === "openai-responses" && m.provider === "openai" && OPENAI_RESPONSES_NONE_REASONING_MODELS.has(m.id),
+		patch: (m) => mergeThinkingLevelMap(m, { off: "none" }),
+	},
+	{
+		match: (m) => supportsOpenAiXhigh(m.id),
+		patch: (m) => mergeThinkingLevelMap(m, { xhigh: "xhigh" }),
+	},
+	{
+		match: (m) => m.provider === "openai" && m.id === "gpt-5.5",
+		patch: (m) => mergeThinkingLevelMap(m, { minimal: null }),
+	},
+	{
+		match: (m) => m.id.endsWith("gpt-5.5-pro"),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null, minimal: null, low: null }),
+	},
+	{
+		match: (m) => m.id.includes("opus-4-6") || m.id.includes("opus-4.6"),
+		patch: (m) => mergeThinkingLevelMap(m, { xhigh: "max" }),
+	},
+	{
+		match: (m) =>
+			m.id.includes("opus-4-7") || m.id.includes("opus-4.7") || m.id.includes("opus-4-8") || m.id.includes("opus-4.8"),
+		patch: (m) => mergeThinkingLevelMap(m, { xhigh: "xhigh" }),
+	},
+	{
+		match: (m) => (m.api === "anthropic-messages" || m.api === "bedrock-converse-stream") && m.id.includes("fable-5"),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null, xhigh: "xhigh" }),
+	},
+	{
+		match: (m) => m.api === "anthropic-messages" && isAnthropicAdaptiveThinkingModel(m.id),
+		patch: (m) => mergeAnthropicMessagesCompat(m, { forceAdaptiveThinking: true }),
+	},
+	{
+		match: (m) => m.api === "anthropic-messages" && isAnthropicTemperatureUnsupportedModel(m.id),
+		patch: (m) => mergeAnthropicMessagesCompat(m, { supportsTemperature: false }),
+	},
+	{
+		match: (m) => m.api === "openai-completions" && m.id.includes("deepseek-v4"),
+		patch: (m) =>
+			mergeThinkingLevelMap(
+				m,
+				m.provider === "openrouter" ? { ...DEEPSEEK_V4_THINKING_LEVEL_MAP, xhigh: "xhigh" } : DEEPSEEK_V4_THINKING_LEVEL_MAP,
+			),
+	},
+	{
+		match: (m) => isGoogleThinkingApi(m) && isGemini3ProModel(m.id),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null, minimal: null, low: "LOW", medium: null, high: "HIGH" }),
+	},
+	{
+		match: (m) => isGoogleThinkingApi(m) && isGemini3FlashModel(m.id),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null }),
+	},
+	{
+		match: (m) => isGoogleThinkingApi(m) && isGemma4Model(m.id),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null, minimal: "MINIMAL", low: null, medium: null, high: "HIGH" }),
+	},
+	{
+		match: (m) => m.provider === "groq" && m.id === "qwen/qwen3-32b",
+		patch: (m) => mergeThinkingLevelMap(m, { minimal: null, low: null, medium: null, high: "default" }),
+	},
+	{
+		match: (m) => m.provider === "openai-codex" && supportsOpenAiXhigh(m.id),
+		patch: (m) => mergeThinkingLevelMap(m, { minimal: "low" }),
+	},
+	{
 		// Mercury 2 in instant mode (reasoning_effort: "none") disables tool calling.
 		// Mark "off" unsupported so the openai-completions provider omits the reasoning param
 		// instead of defaulting to {reasoning:{effort:"none"}} (see openai-completions.ts:575).
 		// Pi's low/medium/high pass through verbatim; OpenRouter normalizes to Mercury's vocabulary.
-		mergeThinkingLevelMap(model, { off: null });
-	}
-	if (model.provider === "opencode-go" && model.id === "kimi-k2.6") {
-		// OpenCode Go exposes Kimi K2.6 thinking as on/off, not distinct effort tiers.
-		mergeThinkingLevelMap(model, { minimal: null, low: null, medium: null });
-	}
-	if (model.provider === "opencode" && model.id === "grok-build-0.1") {
-		// OpenCode Zen Grok Build reasons by default but rejects explicit reasoningEffort.
-		mergeThinkingLevelMap(model, { off: null, minimal: null, low: null, medium: null });
-	}
-	if (model.provider === "ant-ling" && model.reasoning) {
-		// Ring reasons by default. Only high/xhigh have documented explicit effort controls.
-		mergeThinkingLevelMap(model, ANT_LING_RING_THINKING_LEVEL_MAP);
-	}
+		note: "Mercury 2 instant mode disables tool calling",
+		match: (m) => m.provider === "openrouter" && m.id.startsWith("inception/mercury-2"),
+		patch: (m) => mergeThinkingLevelMap(m, { off: null }),
+	},
+	{
+		note: "OpenCode Go exposes Kimi K2.6 thinking as on/off, not distinct effort tiers",
+		match: (m) => m.provider === "opencode-go" && m.id === "kimi-k2.6",
+		patch: (m) => mergeThinkingLevelMap(m, { minimal: null, low: null, medium: null }),
+	},
+	{
+		note: "OpenCode Zen Grok Build reasons by default but rejects explicit reasoningEffort",
+		match: (m) => m.provider === "opencode" && m.id === "grok-build-0.1",
+		patch: (m) => mergeThinkingLevelMap(m, { off: null, minimal: null, low: null, medium: null }),
+	},
+	{
+		note: "Ring reasons by default; only high/xhigh have documented explicit effort controls",
+		match: (m) => m.provider === "ant-ling" && m.reasoning,
+		patch: (m) => mergeThinkingLevelMap(m, ANT_LING_RING_THINKING_LEVEL_MAP),
+	},
+];
+
+function applyThinkingLevelMetadata(model: Model<any>): void {
+	applyOverrides(model, THINKING_LEVEL_RULES);
 }
 
 function getAnthropicMessagesCompat(provider: string, modelId: string): AnthropicMessagesCompat | undefined {
