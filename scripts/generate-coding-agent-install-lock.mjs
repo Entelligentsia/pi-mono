@@ -13,6 +13,17 @@ const outputPackageJsonPath = join(outputDir, "package.json");
 const outputLockfilePath = join(outputDir, "package-lock.json");
 const internalPackagePrefix = "@earendil-works/pi-";
 const installPackageName = "@earendil-works/pi-coding-agent-install";
+
+// Forge fork divergence: compare internal @earendil-works/pi-* package versions
+// by their base (major.minor.patch), ignoring prerelease/build tags. This lets
+// the fork keep a `-forge.N` suffix on coding-agent (the only package with
+// forge-specific code) while siblings stay at the plain upstream version —
+// e.g. coding-agent 0.80.2-forge.1 and pi-tui 0.80.2 both compare as 0.80.2.
+// Upstream uses strict equality; the fork relaxes it because forge-prereleases
+// are API-compatible with their plain base.
+function baseVersion(version) {
+	return String(version).replace(/[+-].*$/, "");
+}
 const allowedInstallScriptPackages = new Map([
 	["@google/genai@1.52.0", "preinstall is a no-op in the published package"],
 	["protobufjs@7.6.4", "postinstall only warns about protobufjs version scheme mismatches"],
@@ -294,8 +305,8 @@ function validateGeneratedFiles(installerPackageJson, installLock, internalNames
 		if (entry.dev || entry.devOptional || entry.extraneous) {
 			errors.push(`${lockPath || "root"} contains dev/extraneous metadata`);
 		}
-		if (packageName?.startsWith(internalPackagePrefix) && entry.version !== installerPackageJson.version) {
-			errors.push(`${lockPath} internal package version ${entry.version} does not match ${installerPackageJson.version}`);
+		if (packageName?.startsWith(internalPackagePrefix) && baseVersion(entry.version) !== baseVersion(installerPackageJson.version)) {
+			errors.push(`${lockPath} internal package version ${entry.version} does not match ${installerPackageJson.version} (base mismatch)`);
 		}
 		if (entry.hasInstallScript) {
 			if (!packageName || !entry.version) {
