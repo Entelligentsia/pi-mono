@@ -32,14 +32,11 @@ export {
 } from "./core/auth-guidance.ts";
 // Auth and model registry
 export {
-	type ApiKeyCredential,
-	type AuthCredential,
-	type AuthStatus,
 	AuthStorage,
 	type AuthStorageBackend,
 	FileAuthStorageBackend,
 	InMemoryAuthStorageBackend,
-	type OAuthCredential,
+	readStoredCredential,
 } from "./core/auth-storage.ts";
 // Compaction
 export {
@@ -185,6 +182,11 @@ export {
 	resolveModelScopeWithDiagnostics,
 	type ScopedModel,
 } from "./core/model-resolver.ts";
+export {
+	type CreateModelRuntimeOptions,
+	ModelRuntime,
+	type ModelRuntimeAuthOverrides,
+} from "./core/model-runtime.ts";
 export type {
 	PackageManager,
 	PathMetadata,
